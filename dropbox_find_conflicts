@@ -1,0 +1,153 @@
+#!/bin/bash
+# 
+# @author Zeus Intuivo <zeus@intuivo.com>
+#
+#
+echo " "
+echo "Finds Dropbox's annynoing conflicted files "
+echo " "
+                                      function _load_BASH_CLIs_() {
+                                        if [ ! -z ${BASHCRMCLI+x} ]; then   # check if a variable is set and not empty
+                                          {
+                                            . "$BASHCRMCLI/execute_command.sh" && THIS_SCRIPT_NAME=`basename "$0"`
+                                          }
+                                        else 
+                                          {
+                                            # Prepare Messengers Alternate Functions 
+                                              blue23=$(echo -e "\\033[1;31m")
+                                              reset=$(echo -e "\\033[0m")
+                                              red=$(echo -e "\\033[1;31m")
+                                              yellow220=`tput setaf 220`
+                                              lightpurple=$(echo -e "\\033[1;123m")
+                                              lightyellow=$(echo -e "\\033[38;5;227m")
+                                              lightgreen=$(echo -e "\\033[38;5;83m")
+                                              lightpink=$(echo -e "\\033[1;204m")
+                                              lightblue=$(echo -e "\\033[1;93m")
+
+                                              BLANK_SPACE="${blue23} • ${green} "
+                   
+                                              function _say_error_and_exit_worker() {
+                                                echo -e "☠ ${red} ${@} ${reset}";
+                                                exit 130; 
+                                              }
+                                                      function !!!(){
+                                                        _say_error_and_exit_worker "${@}"
+                                                      }
+                                              function _anounce_worker(){
+                                                echo -e "${BLANK_SPACE}${@} ${reset}";
+                                              }
+                                                      function -(){
+                                                        _anounce_worker ${@}
+                                                      }
+                                                      function anounce(){
+                                                        _anounce_worker ${@}
+                                                      }
+                                              function _say_worker() {
+                                                echo -e "${lightpurple} +-- ${lightblue} ${@} ${reset}";
+                                              }
+                                                      function • (){
+                                                        _say_worker "${@}"
+                                                      } 
+                                                      function  ·(){
+                                                        _say_worker "${@}"
+                                                      }
+                                              function emphasis() {
+                                                sed 's/'"""${1}"""'/'"""${red}${1}${yellow220}"""'/g'
+                                              }
+                                              function warn(){
+                                                echo -e "${orange208} • ${yellow214} ${@} ${reset}" | emphasis "delete";
+                                              }
+                                              function trim_start_space() {
+                                                  sed -e 's/^[[:space:]]*//' | sed 's/^\ //g' | sed 's/^\t//g' 
+                                              }                          
+                                              function trim_end_space() {
+                                                  sed -e 's/[[:space:]]*$//' | sed 's/\ $//g' | sed 's/\t$//g' 
+                                              }
+                                              function trim() {
+                                                  trim_start_space | trim_end_space
+                                              }
+                                              function escape_single_quotes() {
+                                                sed "s/'/\\\'/g"
+                                              }
+                                              function escape_double_quotes() {
+                                                  sed 's/\"/\\\"/g' 
+                                              }
+
+                                          }
+                                        fi
+
+                                      }
+
+# duplicated in delete_conflicts.sh
+_load_BASH_CLIs_
+
+
+function escape_single_quotes() {
+  sed "s/'/\\\'/g"
+}
+function escape_singly_quotes() {
+  sed "s/’/\\\’/g"
+}
+function escape_espaces(){
+  sed 's/\ /\\\ /g'
+}
+function escape_start_parenthesis(){
+  sed 's/(/\\(/g'
+}
+function escape_end_parenthesis(){
+  sed 's/)/\\)/g'
+}
+function escape_parenthesis(){
+  escape_start_parenthesis | escape_end_parenthesis
+}
+function escape_filename_sequence(){
+  escape_espaces | escape_parenthesis | escape_single_quotes | escape_singly_quotes
+}
+function remove_it() {
+  xargs -I {} rm "{}"
+}
+
+CONDITIONS='*conflicted*.*
+*conflicted*'
+
+while read -r condition; do 
+  {
+    if [ ! -z "$condition" ] ; then 
+      {
+        anounce Checking for files "$condition"
+        FILES=$(find * -name "$condition" ) 
+
+        if [ ! -z "$FILES" ] ; then  # not empty
+          {
+            warn Found
+            FILELIST_ESCAPED=$(escape_filename_sequence <<< """$FILES""")
+            echo "$FILELIST_ESCAPED" 
+            while read -r line; do 
+              {
+                eval ls """$line"""
+              }
+            done <<< """$FILELIST_ESCAPED""" 
+            anounce Checking existance of files "$condition"
+            FILES=$(find * -name "$condition" ) 
+            if [ ! -z "$FILES" ] ; then  # not empty
+              {
+                warn !!! \*conflicted\* files found "
+$FILES
+                "
+              }
+            else
+              {
+                anounce No \*conflicted\* files found. Yey!
+              }
+            fi
+          } 
+        else 
+          {
+            anounce No \*conflicted\* files found. Yey!
+          }
+        fi
+      }
+    fi
+  }
+done <<< "$CONDITIONS"
+
